@@ -10,8 +10,11 @@ require "vendor/autoload.php";
 
 use api\DateApi as DateApi;
 
-$date_str = '2019-08-01';
+$server = new Swoole\Http\Server('0.0.0.0', 8080);
 
-$date = new DateApi($date_str);
-
-echo $date->isHoliday();
+$server->on('request', function($request, $response) {
+    $date = isset($request->get['date']) ? $request->get['date'] : '';
+    $date = new DateApi($date);
+    $response->end($date->isHoliday());
+});
+$server->start();

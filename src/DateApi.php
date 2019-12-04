@@ -15,20 +15,15 @@ class DateApi {
     public $date;
 
     public function __construct($date = '') {
-        $this->date = $date;
+        $this->date = empty($date) ? date('Y-m-d') : $date;
         $this->dealDate();
         $this->getSpecialData();
     }
 
     public function dealDate() {
-        if (empty($this->date)) {
-            $this->year = date('Y');
-            $this->date_str = date('md');
-        } else {
-            $date_arr = explode('-', $this->date);
-            $this->year = $date_arr[0];
-            $this->date_str = $date_arr[1] . $date_arr[2];
-        }
+        $date_arr = explode('-', $this->date);
+        $this->year = $date_arr[0];
+        $this->date_str = $date_arr[1] . $date_arr[2];
     }
 
     public function getSpecialData() {
@@ -54,6 +49,7 @@ class DateApi {
     }
 
     public function getDate(): string {
+        echo 'date1' . $this->date . PHP_EOL;
         return empty($this->date_str) ? date('md') : date('md', strtotime($this->date));
     }
 
