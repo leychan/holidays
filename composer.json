@@ -8,6 +8,7 @@
             "email": "leilei1512159@gmail.com"
         }
     ],
+    "minimum-stability": "dev",
     "require": {
         "ext-json": "*",
         "php": ">=7.1.0",
