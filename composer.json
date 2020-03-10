@@ -1,7 +1,7 @@
 {
     "name": "leychan/holidays",
     "type": "library",
-    "license": "mit",
+    "license": "apache",
     "authors": [
         {
             "name": "lei",
