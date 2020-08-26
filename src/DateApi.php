@@ -12,30 +12,46 @@ class DateApi {
     public $holiday_data;
     public $year;
     public $date_str;
+    public $time_stamp;
     public $date;
 
-    public function __construct($date = '') {
-        echo 'real date ' . $date, PHP_EOL;
-        $this->date = empty($date) ? date('Y-m-d') : $date;
-        $this->dealDate();
-        $this->holiday_data = $this->getSpecialData();
-    }
+    const ERROR_CODE = 0;
+    const SUCCESS_CODE = 1;
 
-    public function dealDate() {
-        $date_arr = explode('-', $this->date);
-        $this->year = $date_arr[0];
-        $this->date_str = $date_arr[1] . $date_arr[2];
+    const SPECIAL_HOLIDAY = 2;
+    const NORMAL_HOLIDAY = 1;
+    const NOT_HOLIDAY = 0;
+
+    public function __construct($date) {
+        $this->date = $date;
     }
 
     /**
-     * 根据年份日期获取节假日数据, 获取以后存放在缓存数组中
+     * @desc 检查和格式化时间
+     * @user lei
+     * @throws \Exception
+     */
+    public function dealDate() {
+        $this->time_stamp = strtotime($this->date);
+        if (!$this->time_stamp) {
+            throw new \Exception('date format error');
+        }
+        $this->year = date('Y', $this->time_stamp);
+        $this->date_str = date('md', $this->time_stamp);
+    }
+
+    /**
+     * @desc 根据年份日期获取节假日数据, 获取以后存放在缓存数组中
+     * @user lei
+     * @return array
+     * @throws \Exception
      */
     public function getSpecialData() :array {
         global $cache;
+        $path = __DIR__ . '/../data/' . $this->year . '_data.json';
         if (empty($cache[$this->year])) {
-            $path = __DIR__ . '/../data/' . $this->year . '_data.json';
             if (!file_exists($path)) {
-                return [];
+                throw new \Exception('no holiday data file found', self::ERROR_CODE);
             }
             $data = file_get_contents($path);
             $json = json_decode($data, true);
@@ -46,42 +62,22 @@ class DateApi {
     }
 
     /**
-     * 判断日期是否是假日/周末, 假日返回2, 周末返回1, 工作日返回0
-     *
-     * @return int
+     * @desc 判断日期是否是假日/周末, 假日返回2, 周末返回1, 工作日返回0
+     * @user lei
+     * @return array
      */
     public function isHoliday() :array {
-        if (empty($this->holiday_data)) {
-            return [
-                'status' => -1,
-                'error'  => '没有查询的日期数据'
-            ];
+        try {
+            $this->dealDate();
+            $this->holiday_data = $this->getSpecialData();
+        } catch (\Exception $e) {
+            return $this->asJson(self::NOT_HOLIDAY, $e->getCode(), $e->getMessage());
         }
-        echo 'current deal date is ' . $this->date_str . PHP_EOL;
-        $date = $this->getDate();
-        echo 'date:' . $date . PHP_EOL;
-        if (isset($this->holiday_data[$date])) {
-            return [
-                'status'  => 0,
-                'error'   => '',
-                'holiday' => $this->holiday_data[$date]
-            ];
+        if (isset($this->holiday_data[$this->date_str])) {
+            return $this->asJson($this->holiday_data[$this->date_str]);
         }
         $holiday = $this->normalDay($this->getWeekDay());
-        return [
-            'status'  => 0,
-            'error'   => '',
-            'holiday' => $holiday
-        ];
-    }
-
-    /**
-     * 获取月份和日期, 0901
-     *
-     * @return string
-     */
-    public function getDate(): string {
-        return empty($this->date_str) ? date('md') : date('md', strtotime($this->date));
+        return $this->asJson($holiday);
     }
 
     /**
@@ -92,9 +88,9 @@ class DateApi {
      */
     public function normalDay(string $weekday): int {
         if (in_array($weekday, ['0', '6'])) {
-            return 1;
+            return self::NORMAL_HOLIDAY;
         }
-        return 0;
+        return self::NOT_HOLIDAY;
     }
 
     /**
@@ -105,6 +101,14 @@ class DateApi {
     public function getWeekDay(): string {
         echo 'this date '. $this->date . PHP_EOL;
         return empty($this->date_str) ? date('w') : date('w', strtotime($this->date));
+    }
+
+    public function asJson($is_holiday, $status = 1, $msg = '') {
+        return [
+            'holiday' => $is_holiday,
+            'status'  => $status,
+            'msg'     => $msg
+        ];
     }
 }
 

@@ -17,7 +17,7 @@ $server = new Swoole\Http\Server('0.0.0.0', 8080);
 $cache = [];
 
 $server->on('request', function ($request, $response) {
-    $date = isset($request->get['date']) ? $request->get['date'] : '';
+    $date = $request->get['date'] ?? '';
     if (empty($date)) {
         $response->end(json_encode([
             'status' => -1,
